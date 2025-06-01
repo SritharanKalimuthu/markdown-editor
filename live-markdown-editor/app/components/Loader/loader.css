@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes bounce-typewriter {
+  85%, 92%, 100% { transform: translateY(0); }
+  89% { transform: translateY(-4px); }
+  95% { transform: translateY(2px); }
+}
+
+@keyframes slide-typewriter {
+  5% { transform: translateX(14px); }
+  15%, 30% { transform: translateX(6px); }
+  40%, 55% { transform: translateX(0); }
+  65%, 70% { transform: translateX(-4px); }
+  80%, 89% { transform: translateX(-12px); }
+  100% { transform: translateX(14px); }
+}
+
+@keyframes paper-typewriter {
+  5% { transform: translateY(46px); }
+  20%, 30% { transform: translateY(34px); }
+  40%, 55% { transform: translateY(22px); }
+  65%, 70% { transform: translateY(10px); }
+  80%, 85% { transform: translateY(0); }
+  92%, 100% { transform: translateY(46px); }
+}
+
+@keyframes keys-typewriter {
+  0%, 100% {
+    box-shadow:
+      15px 0 0 white, 30px 0 0 white, 45px 0 0 white, 60px 0 0 white,
+      75px 0 0 white, 90px 0 0 white,
+      22px 10px 0 white, 37px 10px 0 white, 52px 10px 0 white,
+      60px 10px 0 white, 68px 10px 0 white, 83px 10px 0 white;
+  }
+  9% {
+    box-shadow: 15px 2px 0 white, 30px 0 0 white, 45px 0 0 white, 60px 0 0 white, 75px 0 0 white, 90px 0 0 white,
+      22px 10px 0 white, 37px 10px 0 white, 52px 10px 0 white, 60px 10px 0 white, 68px 10px 0 white, 83px 10px 0 white;
+  }
+  18% {
+    box-shadow: 15px 0 0 white, 30px 0 0 white, 45px 0 0 white, 60px 2px 0 white, 75px 0 0 white, 90px 0 0 white,
+      22px 10px 0 white, 37px 10px 0 white, 52px 10px 0 white, 60px 10px 0 white, 68px 10px 0 white, 83px 10px 0 white;
+  }
+  /* More intermediate keyframe states can be added here */
+}
+
+@layer utilities {
+  .animate-bounce-typewriter {
+    animation: bounce-typewriter 3s linear infinite;
+  }
+  .animate-slide-typewriter {
+    animation: slide-typewriter 3s ease infinite;
+  }
+  .animate-paper-typewriter {
+    animation: paper-typewriter 3s linear infinite;
+  }
+  .animate-keys-typewriter {
+    animation: keys-typewriter 3s linear infinite;
+  }
+}
