@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }) {
         <TopBar />
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-gradient-to-r from-violet-50 to-violet-100">
+        <main className="flex-1 overflow-auto bg-gradient-to-br from-indigo-50 via-white to-purple-50">
             <div className="fixed top-0 left-0 bg-river w-full sm:h-full min-h-full z-[0] "></div>
             <div className="fixed top-0 left-0 bg-white opacity-40 w-full min-h-full z-[0] "></div>
             {children}

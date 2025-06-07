@@ -1,5 +1,5 @@
 import UserFileCollection from "../models/userFile.model.js";
-import { getFile, updateFile, uploadFile, deleteFile } from "../utils/googleService.js";
+import { getFile, updateFile, uploadFile, renameFile, downloadFile, deleteFile } from "../utils/googleService.js";
 import User from "../models/user.model.js"
 import { parseFormData } from "../utils/fileParsing.js";
 import fs from "fs";
@@ -40,7 +40,7 @@ export const getFileText = async( req,res ) => {
 
         const fileData = await getFile(fileId);
         console.log(fileData);
-        return res.status(200).json({ message: "success", file: fileData, fileName: file.files[0].fileName });
+        return res.status(200).json({ message: "success", file: fileData.file, fileName: fileData.fileName });
     }catch(err){
         console.log("Error getting file data:", err);
         return res.status(500).json({ message: "Internal Server Error", error: err });
@@ -154,3 +154,77 @@ export const updateMarkdownFile = async( req,res ) => {
         return res.status(500).json({message:"Internal Server Error", error:err});
     }
 }
+
+export const RenameFile = async (req, res) => {
+  try {
+    const { fileId, newFileName } = req.body;
+
+    const driveResponse = await renameFile(fileId, newFileName);
+
+    const dbResponse = await UserFileCollection.findOneAndUpdate(
+      { "files.driveFileId": fileId },
+      {
+        $set: {
+          "files.$.fileName": newFileName,
+          "files.$.updatedAt": new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!dbResponse) {
+      return res.status(404).json({ message: "File not found in DB" });
+    }
+
+    return res.status(200).json({
+      message: "File renamed successfully",
+      driveFile: driveResponse,
+      dbFile: dbResponse,
+    });
+  } catch (err) {
+    console.log("Error renaming file", err);
+    return res.status(500).json({ message: "Internal Server Error", error: err });
+  }
+};
+
+export const DownloadFile = async( req, res ) => {
+    try{
+        const { fileId } = req.query;
+        const driveResponse = await downloadFile(fileId);
+        return res.status(200).json({ message: "File downloaded successfully", driveFile: driveResponse });
+    }catch(err){
+        console.log("Error downloading file", err);
+        return res.status(500).json({message:"Internal Server Error", error:err});
+    }
+}
+
+export const DeleteFile = async (req, res) => {
+    console.log("Deletion API started");
+  try {
+    console.log("Received Data", req.body);
+    const { fileId, userKey } = req.body;
+
+    const driveResponse = await deleteFile(fileId);
+
+    const dbResponse = await UserFileCollection.findOneAndUpdate(
+      { userKey },
+      {
+        $pull: { files: { driveFileId: fileId } },
+      },
+      { new: true }
+    );
+
+    if (!dbResponse) {
+      return res.status(404).json({ message: "File not found in DB" });
+    }
+
+    return res.status(200).json({
+      message: "File deleted successfully",
+      driveFile: driveResponse,
+      dbFile: dbResponse,
+    });
+  } catch (err) {
+    console.log("Error deleting file", err);
+    return res.status(500).json({ message: "Internal Server Error", error: err });
+  }
+};

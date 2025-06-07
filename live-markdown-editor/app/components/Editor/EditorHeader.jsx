@@ -63,7 +63,7 @@ const EditorHeader = ({
           </div>
           <div className="flex-1 mx-3">
             {!isEditingTitle ? (
-              <h1 className="text-lg font-medium text-gray-800 truncate cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+              <h1 className="text-sm md:text-lg font-medium text-gray-800 truncate cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
                   onClick={() => setIsEditingTitle(true)}>
                 {title}
               </h1>

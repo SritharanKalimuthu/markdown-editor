@@ -57,7 +57,7 @@ export default function WelcomeMessage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-gradient-to-r from-violet-100 to-violet-300 flex flex-col justify-center items-center text-center">
+    <div className="relative min-h-screen w-full bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex flex-col justify-center items-center text-center">
       <div className="absolute top-0 left-0 bg-river w-full h-full z-[0]"></div>
       <div className="relative max-w-3xl xl:max-w-4xl px-6 space-y-6 z-[1]">
         <h1 className="text-xl md:text-4xl xl:text-5xl font-extrabold text-violet-600">

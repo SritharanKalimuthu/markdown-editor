@@ -20,9 +20,9 @@ export const getFileData = async (fileId) => {
     }
 };
 
-export const createAndUploadFile = async (formData) => {
+export const createAndUploadFile = async (fileData) => {
     try {
-        const response = await api.post(`/file/create`, formData);
+        const response = await api.post(`/file/create`, fileData);
         return response;
     } catch (err) {
         console.log("Error creating file", err);
@@ -30,12 +30,35 @@ export const createAndUploadFile = async (formData) => {
     }
 }
 
-export const updateMarkdownFile = async (formData) => {
+export const updateMarkdownFile = async (fileData) => {
     try {
-        const response = await api.put(`/file/update`, formData);
+        const response = await api.put(`/file/update`, fileData);
         return response;
     } catch (err) {
         console.log("Error creating file", err);
         return err;
     }
+}
+
+export const RenameFile = async ( fileData ) => {
+    try {
+        const response = await api.put(`/file/rename`, fileData);
+        return response;
+    } catch (err) {
+        console.log("Error renaming file", err);
+        return err;
+    }
+}
+
+export const DeleteFile = async ( fileData ) => {
+  try {
+    console.log(fileData);
+    const response = await api.delete(`/file/delete`, {
+        data: fileData,
+    }); 
+    return response;
+  } catch (err) {
+    console.log("Error deleting file", err);
+    return err;
+  }
 }

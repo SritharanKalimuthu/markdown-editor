@@ -96,19 +96,36 @@ export const listFilesInFolder = async (folderId) => {
 //   });
 // };
 export const getFile = async (fileId) => {
+
+  const metadataRes = await drive.files.get({
+    fileId,
+    fields: 'name'
+  });
+  
+  const fileName = metadataRes.data.name;
+
   const res = await drive.files.get({
     fileId,
     alt: 'media',
   });
 
-  return res.data;
+  return {
+    file: res.data,
+    fileName: fileName
+  }
 };
 
 
 
 // Download File
-export const downloadFile = async (fileId, destinationPath) => {
-  const dest = fs.createWriteStream(destinationPath);
+export const downloadFile = async (fileId, destinationDir = './') => {
+  const metaRes = await drive.files.get({
+    fileId,
+    fields: 'name',
+  });
+
+  const fileName = metaRes.data.name;
+  const destinationPath = path.join(destinationDir, fileName);
 
   const res = await drive.files.get(
     { fileId, alt: 'media' },
@@ -116,9 +133,10 @@ export const downloadFile = async (fileId, destinationPath) => {
   );
 
   return new Promise((resolve, reject) => {
+    const dest = fs.createWriteStream(destinationPath);
     res.data
       .on('end', () => resolve(destinationPath))
-      .on('error', (err) => reject(err))
+      .on('error', reject)
       .pipe(dest);
   });
 };

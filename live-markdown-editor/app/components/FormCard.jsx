@@ -40,7 +40,7 @@ export default function AnimatedCardForm() {
           } else if (step === 2 && isExistingUser === true) {
             handleLoginSubmit();
           } else if (step === 2 && isExistingUser === false) {
-            handleRegisterSubmit();
+            handleUsernameSubmit();
           }else if (step === 3) {
             handlePasswordSubmit();
           }else if (step === 4) {
@@ -274,7 +274,7 @@ export default function AnimatedCardForm() {
 
   return (
     <div
-      className="max-w-md mx-auto bg-gray-100 shadow-md overflow-hidden transition-shadow duration-300 ease-in-out dynamic-corners p-10 md:py-16 md:px-16"
+      className="max-w-md mx-auto bg-white shadow-md overflow-hidden transition-shadow duration-300 ease-in-out dynamic-corners p-10 md:py-16 md:px-16"
       style={{ borderRadius: "2rem 1rem 2rem 1rem / 1rem 2rem 1rem 2rem" }}
     >
       <style jsx global>{`

@@ -14,31 +14,39 @@ import Loader from "@/app/components/Loader/Loader";
 import { getuserKey } from "@/app/utils/getUsername";
 import { updateMarkdownFile, getFileData } from "@/app/api/files.service";
 
-// Custom hooks for better separation of concerns
 const useHistory = (initialValue = "") => {
   const [history, setHistory] = useState([initialValue]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   const updateHistory = useCallback((newValue) => {
-    if (newValue !== history[historyIndex]) {
-      const newHistory = [...history.slice(0, historyIndex + 1), newValue].slice(-100);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-    }
-  }, [history, historyIndex]);
+    setHistory(prev => {
+      const currentIndex = historyIndex;
+      if (newValue !== prev[currentIndex]) {
+        const newHistory = [...prev.slice(0, currentIndex + 1), newValue].slice(-100);
+        return newHistory;
+      }
+      return prev;
+    });
+    setHistoryIndex(prev => {
+      const newIndex = prev + 1;
+      return newIndex;
+    });
+  }, [historyIndex]);
 
   const undo = useCallback(() => {
     if (historyIndex > 0) {
-      setHistoryIndex(prev => prev - 1);
-      return history[historyIndex - 1];
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      return history[newIndex];
     }
     return null;
   }, [history, historyIndex]);
 
   const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
-      setHistoryIndex(prev => prev + 1);
-      return history[historyIndex + 1];
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      return history[newIndex];
     }
     return null;
   }, [history, historyIndex]);
@@ -52,11 +60,17 @@ const useHistory = (initialValue = "") => {
 const useAutoSave = (callback, delay = 5000) => {
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState(new Date());
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     if (!isDirty) return;
 
-    const timer = setTimeout(async () => {
+    // Clear previous timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(async () => {
       try {
         await callback();
         setIsDirty(false);
@@ -66,7 +80,11 @@ const useAutoSave = (callback, delay = 5000) => {
       }
     }, delay);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, [isDirty, callback, delay]);
 
   const markDirty = useCallback(() => setIsDirty(true), []);
@@ -99,7 +117,7 @@ const useCursorPosition = (textareaRef, text) => {
         column: lines[lines.length - 1].length + 1
       });
     }
-  }, [text, textareaRef]);
+  }, [text]);
 
   return { position, updatePosition };
 };
@@ -113,7 +131,7 @@ export default function MarkdownEditor() {
   const isLoaded = usePageLoaded();
   const textareaRef = useRef(null);
 
-  // State management
+  // State management with proper initialization
   const [title, setTitle] = useState("untitled document");
   const [originalTitle, setOriginalTitle] = useState("untitled document");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -123,52 +141,39 @@ export default function MarkdownEditor() {
   const [zoom, setZoom] = useState(100);
   const [showToolbar, setShowToolbar] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Custom hooks
   const history = useHistory(markdown);
   const textStats = useTextStats(markdown);
   const cursorPosition = useCursorPosition(textareaRef, markdown);
 
-  // Auto-save functionality
+  // Stable save function
   const saveFile = useCallback(async () => {
     const blob = new Blob([markdown], { type: "text/markdown" });
     const file = new File([blob], `${title}.md`, { type: "text/markdown" });
     const formData = new FormData();
-    
     formData.append("file", file);
     formData.append("fileId", fileId);
     formData.append("userKey", userKey);
-    formData.append("fileName", title); 
+    formData.append("fileName", title);
 
     const res = await updateMarkdownFile(formData);
     if (res.status !== 200) {
       throw new Error("Failed to save file");
     }
-    
-    // Update the original title after successful save
     setOriginalTitle(title);
     toast.success("File saved successfully");
   }, [markdown, title, fileId, userKey]);
 
   const autoSave = useAutoSave(saveFile);
 
-  // Format insertion logic with better error handling
+  // Stable format map
   const formatMap = useMemo(() => ({
-    bold: (text) => text.startsWith('**') && text.endsWith('**') 
-      ? text.slice(2, -2) 
-      : `**${text || "bold text"}**`,
-    italic: (text) => text.startsWith('*') && text.endsWith('*') && !text.startsWith('**')
-      ? text.slice(1, -1)
-      : `*${text || "italic text"}*`,
-    underline: (text) => text.startsWith('<u>') && text.endsWith('</u>')
-      ? text.slice(3, -4)
-      : `<u>${text || "underlined text"}</u>`,
-    strikethrough: (text) => text.startsWith('~~') && text.endsWith('~~')
-      ? text.slice(2, -2)
-      : `~~${text || "strikethrough text"}~~`,
-    highlight: (text) => text.startsWith('==') && text.endsWith('==')
-      ? text.slice(2, -2)
-      : `==${text || "highlighted text"}==`,
+    bold: (text) => text.startsWith('**') && text.endsWith('**') ? text.slice(2, -2) : `**${text || "bold text"}**`,
+    italic: (text) => text.startsWith('*') && text.endsWith('*') && !text.startsWith('**') ? text.slice(1, -1) : `*${text || "italic text"}*`,
+    underline: (text) => text.startsWith('<u>') && text.endsWith('</u>') ? text.slice(3, -4) : `<u>${text || "underlined text"}</u>`,
+    strikethrough: (text) => text.startsWith('~~') && text.endsWith('~~') ? text.slice(2, -2) : `~~${text || "strikethrough text"}~~`,
+    highlight: (text) => text.startsWith('==') && text.endsWith('==') ? text.slice(2, -2) : `==${text || "highlighted text"}==`,
     h1: (text) => `# ${text || "Heading 1"}`,
     h2: (text) => `## ${text || "Heading 2"}`,
     h3: (text) => `### ${text || "Heading 3"}`,
@@ -176,9 +181,7 @@ export default function MarkdownEditor() {
     ul: (text) => `- ${text || "List item"}`,
     ol: (text) => `1. ${text || "List item"}`,
     quote: (text) => `> ${text || "Quote text"}`,
-    code: (text) => text.includes('\n') 
-      ? `\`\`\`\n${text || "code"}\n\`\`\``
-      : `\`${text || "code"}\``,
+    code: (text) => text.includes('\n') ? `\`\`\`\n${text || "code"}\n\`\`\`` : `\`${text || "code"}\``,
     link: (text) => `[${text || "link text"}](https://example.com)`,
     image: (text) => `![${text || "alt text"}](image-url)`,
     table: () => `| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1 | Cell 2 | Cell 3 |\n| Cell 4 | Cell 5 | Cell 6 |`,
@@ -186,11 +189,12 @@ export default function MarkdownEditor() {
     checkbox: (text) => `- [ ] ${text || "Task item"}`
   }), []);
 
-  // Load file data on mount
+  // File loading effect
   useEffect(() => {
     const fetchFile = async () => {
       if (!fileId) {
         setIsLoading(false);
+        setIsInitialLoad(false);
         return;
       }
 
@@ -198,6 +202,7 @@ export default function MarkdownEditor() {
         const res = await getFileData(fileId);
         if (res.status === 200) {
           const { file, fileName } = res.data;
+          console.log(res.data)
           setMarkdown(file);
           setTitle(fileName);
           setOriginalTitle(fileName);
@@ -211,27 +216,32 @@ export default function MarkdownEditor() {
         toast.error("Failed to load file");
       } finally {
         setIsLoading(false);
+        setIsInitialLoad(false);
       }
     };
 
     fetchFile();
-  }, [fileId]);
+  }, [fileId]); // Only depend on fileId
 
-  // Handle responsive layout
+  // Separate resize handler that doesn't interfere with manual view mode changes
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      if (width < 768) {
-        setViewMode("edit");
-      } else if (viewMode === "edit" && width >= 1024) {
-        setViewMode("split");
+      
+      // Only auto-adjust on initial load or if we're in an invalid state
+      if (isInitialLoad || (width < 768 && viewMode === "split")) {
+        if (width < 768) {
+          setViewMode("edit");
+        } else if (width >= 1024 && viewMode === "edit" && !isMobile) {
+          setViewMode("split");
+        }
       }
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [viewMode]);
+  }, [isInitialLoad, isMobile]); // Remove viewMode dependency
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -256,25 +266,25 @@ export default function MarkdownEditor() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [markdown, history]); // Add proper dependencies
 
-  // Update markdown with history and auto-save
+  // Stable markdown update function
   const updateMarkdown = useCallback((newValue) => {
     setMarkdown(newValue);
     history.updateHistory(newValue);
     autoSave.markDirty();
-  }, [history, autoSave]);
+  }, [history.updateHistory, autoSave.markDirty]);
 
-  // Title change handler with validation
+  // Fixed title change handler
   const handleTitleChange = useCallback((newTitle) => {
-    const sanitizedTitle = newTitle.trim() || "untitled document";
+    const sanitizedTitle = newTitle;
     setTitle(sanitizedTitle);
     if (sanitizedTitle !== originalTitle) {
       autoSave.markDirty();
     }
-  }, [originalTitle, autoSave]);
+  }, [originalTitle, autoSave.markDirty]);
 
-  // Format insertion
+  // Stable format insertion
   const insertFormat = useCallback((format) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -282,7 +292,6 @@ export default function MarkdownEditor() {
     const { selectionStart: start, selectionEnd: end } = textarea;
     const selectedText = markdown.substring(start, end);
     const formatter = formatMap[format];
-    
     if (!formatter) return;
 
     const insertText = formatter(selectedText);
@@ -290,37 +299,33 @@ export default function MarkdownEditor() {
     
     updateMarkdown(newValue);
 
-    // Handle cursor positioning
     setTimeout(() => {
       textarea.focus();
-      const newCursorPos = format === 'link' 
-        ? start + insertText.indexOf('https://example.com')
-        : format === 'image'
-        ? start + insertText.indexOf('image-url')
-        : start + insertText.length;
-      
+      const newCursorPos = format === 'link' ? start + insertText.indexOf('https://example.com') : 
+                          format === 'image' ? start + insertText.indexOf('image-url') : 
+                          start + insertText.length;
       const selectionLength = format === 'link' ? 19 : format === 'image' ? 9 : 0;
       textarea.setSelectionRange(newCursorPos, newCursorPos + selectionLength);
       cursorPosition.updatePosition();
     }, 0);
-  }, [markdown, updateMarkdown, formatMap, cursorPosition]);
+  }, [markdown, updateMarkdown, formatMap, cursorPosition.updatePosition]);
 
-  // History handlers
+  // Stable undo/redo handlers
   const handleUndo = useCallback(() => {
     const previousValue = history.undo();
     if (previousValue !== null) {
       setMarkdown(previousValue);
     }
-  }, [history]);
+  }, [history.undo]);
 
   const handleRedo = useCallback(() => {
     const nextValue = history.redo();
     if (nextValue !== null) {
       setMarkdown(nextValue);
     }
-  }, [history]);
+  }, [history.redo]);
 
-  // File operations
+  // Stable save handler
   const handleSave = useCallback(async () => {
     try {
       await saveFile();
@@ -328,8 +333,9 @@ export default function MarkdownEditor() {
     } catch (error) {
       toast.error("Failed to save file");
     }
-  }, [saveFile, autoSave]);
+  }, [saveFile, autoSave.markClean]);
 
+  // Stable download handler
   const handleDownload = useCallback(() => {
     const blob = new Blob([markdown], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
@@ -343,6 +349,7 @@ export default function MarkdownEditor() {
     toast.success("File downloaded successfully!");
   }, [markdown, title]);
 
+  // Stable import handler
   const handleImport = useCallback((event) => {
     const file = event.target.files[0];
     if (!file || !(file.type === 'text/markdown' || file.type === 'text/plain' || file.name.endsWith('.md'))) {
@@ -360,6 +367,7 @@ export default function MarkdownEditor() {
     event.target.value = '';
   }, [updateMarkdown, handleTitleChange]);
 
+  // Stable copy handler
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(markdown);
@@ -369,6 +377,7 @@ export default function MarkdownEditor() {
     }
   }, [markdown]);
 
+  // Stable share handler
   const handleShare = useCallback(async () => {
     try {
       if (navigator.share) {
@@ -387,6 +396,7 @@ export default function MarkdownEditor() {
     }
   }, [title, markdown]);
 
+  // Stable back handler
   const handleBack = useCallback(() => {
     if (autoSave.isDirty && !window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
       return;
@@ -394,6 +404,7 @@ export default function MarkdownEditor() {
     router.push("/pages/dashboard");
   }, [autoSave.isDirty, router]);
 
+  // Fixed view mode change handler
   const handleViewModeChange = useCallback((mode) => {
     if (isMobile && mode === "split") {
       toast.info("Split view not recommended on mobile. Using edit mode.", { duration: 2000 });
@@ -403,7 +414,6 @@ export default function MarkdownEditor() {
     }
   }, [isMobile]);
 
-  // Loading state
   if (!isLoaded || isLoading) {
     return (
       <div className="h-screen">

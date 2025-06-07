@@ -1,11 +1,14 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Lock, Mail, User, Trash2, Loader2 } from 'lucide-react';
+import { 
+  Lock, Mail, User, Trash2, Loader2, Settings, Shield, 
+  Key, AlertTriangle, CheckCircle2, X, Edit3, Sparkles 
+} from 'lucide-react';
 import { getUsername, getUseremail } from '@/app/utils/getUsername';
 import { updateUsername } from '@/app/api/auth.service';
 import toast from 'react-hot-toast';
 
-export default function SettingsPage() {
+export default function FuturisticSettingsPage() {
   const [username, setUserName] = useState("");
   const [usermail, setUserMail] = useState("");
   const [activeDialog, setActiveDialog] = useState(null);
@@ -32,7 +35,7 @@ export default function SettingsPage() {
     } catch (e) {
       console.log(e);
     }
-  }, [])
+  }, []);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -85,6 +88,7 @@ export default function SettingsPage() {
         setSuccess('Username updated successfully');
         setActiveDialog(null);
         toast.success('Username updated successfully');
+        setFormData({ ...formData, newUsername: "", currentPassword: "" });
       } else if (response.status === 400) {
         console.log("Invalid credentials");
         toast.error("Invalid credentials");
@@ -110,8 +114,11 @@ export default function SettingsPage() {
       })
     });
     if (!response.ok) throw new Error('Failed to update email');
+    setUserMail(formData.newEmail);
     setSuccess('Email updated successfully');
     setActiveDialog(null);
+    toast.success('Email updated successfully');
+    setFormData({ ...formData, newEmail: "", currentPassword: "" });
   };
 
   const sendPasswordReset = async () => {
@@ -126,8 +133,10 @@ export default function SettingsPage() {
       });
       if (!response.ok) throw new Error('Failed to send reset link');
       setSuccess('Password reset link sent to your email');
+      toast.success('Password reset link sent to your email');
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
+      toast.error('Failed to send password reset link');
     } finally {
       setLoading(false);
     }
@@ -142,190 +151,280 @@ export default function SettingsPage() {
       body: JSON.stringify({ password: formData.deletePassword })
     });
     if (!response.ok) throw new Error('Failed to delete account');
+    toast.success('Account deleted successfully');
     window.location.href = '/auth/signin';
   };
 
-  return (
-    <div className="relative z-[1]">
-      <div className="max-w-4xl mx-auto space-y-8 mt-20 p-4 ">
-        <h1 className="text-xl sm:text-2xl font-bold text-violet-800">ACCOUNT SETTINGS</h1>
-        <div className="grid gap-6 sm:grid-cols-2">
-          {/* Username card */}
-          <div className="bg-white/80 p-6 rounded-xl shadow-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <User className="sm:w-6 sm:h-6 w-5 h-5 text-violet-600" />
-              <h2 className="text-xs sm:text-md md:text-[15px] font-semibold">Username</h2>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs sm:text-md md:text-[15px] text-gray-600">{username}</span>
-              <button
-                onClick={() => setActiveDialog("username")}
-                className="text-xs sm:text-md md:text-[15px] text-violet-600 hover:text-violet-700 font-medium"
-              >
-                Change
-              </button>
-            </div>
+  const SettingCard = ({ icon: Icon, title, value, onAction, actionText, actionColor = "text-indigo-600", dangerous = false }) => (
+    <div className={`group bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 border ${dangerous ? 'border-red-200 hover:border-red-300' : 'border-gray-200 hover:border-indigo-200'} hover:shadow-xl transition-all duration-300`}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className={`p-3 rounded-2xl ${dangerous ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-indigo-500 to-purple-600'} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+            <Icon size={20} className="text-white" />
           </div>
-          
-          {/* Email card */}
-          <div className="bg-white/80 p-6 rounded-xl shadow-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <Mail className="sm:w-6 sm:h-6 w-5 h-5 text-violet-600" />
-              <h2 className="text-xs sm:text-md md:text-[15px] font-semibold">Email</h2>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs sm:text-md md:text-[15px] text-gray-600">{usermail}</span>
-              <button
-                onClick={() => setActiveDialog("email")}
-                className="text-xs sm:text-md md:text-[15px] text-violet-600 hover:text-violet-700 font-medium"
-              >
-                Change
-              </button>
-            </div>
-          </div>
-          
-          {/* Password card */}
-          <div className="bg-white/80 p-6 rounded-xl shadow-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <Lock className="sm:w-6 sm:h-6 w-5 h-5 text-violet-600" />
-              <h2 className="text-xs sm:text-md md:text-[15px] font-semibold">Password</h2>
-            </div>
-            <button
-              onClick={sendPasswordReset}
-              disabled={loading}
-              className="w-full text-xs sm:text-md md:text-[15px] text-violet-600 hover:text-violet-700 font-medium flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Sending...
-                </>
-              ) : "Send Reset Link"}
-            </button>
-          </div>
-          
-          {/* Delete account card */}
-          <div className="bg-white/80 p-6 rounded-xl shadow-sm border border-red-100">
-            <div className="flex items-center gap-4 mb-4">
-              <Trash2 className="sm:w-6 sm:h-6 w-5 h-5 text-red-600" />
-              <h2 className="text-xs sm:text-md md:text-[15px] font-semibold text-red-600">Delete Account</h2>
-            </div>
-            <button
-              onClick={() => setActiveDialog("delete")}
-              className="w-full text-xs sm:text-md md:text-[15px] text-red-600 hover:text-red-700 font-medium"
-            >
-              Delete Account Permanently
-            </button>
+          <div>
+            <h3 className="text-sm text-lg font-semibold text-gray-900 mb-1">{title}</h3>
+            <p className="text-sm text-md text-gray-600 truncate max-w-[200px]">{value}</p>
           </div>
         </div>
-        
-        {/* Username or Email dialog */}
-        {(activeDialog === "username" || activeDialog === "email") && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-            <form 
-              onSubmit={handleSubmit} 
-              className="bg-white rounded-xl p-6 max-w-md w-full space-y-6"
+        <button
+          onClick={onAction}
+          disabled={loading}
+          className={`px-4 pt-2 sm:pt-0 py-2 mx-auto sm:mx-0 rounded-xl text-sm sm:text-md font-medium transition-all duration-200 hover:shadow-md flex items-center gap-2 ${
+            dangerous 
+              ? 'text-red-600 hover:bg-red-50 hover:text-red-700' 
+              : `${actionColor} hover:bg-indigo-50 hover:text-indigo-700`
+          }`}
+        >
+          {loading && actionText.includes('Sending') ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <Edit3 size={16} />
+              {actionText}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
+  const ActionModal = ({ isOpen, onClose, onSubmit, title, children, confirmText, confirmColor, dangerous = false }) => {
+    if (!isOpen) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md animate-in zoom-in-95 duration-300">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl ${dangerous ? 'bg-red-100' : 'bg-indigo-100'}`}>
+                {dangerous ? (
+                  <AlertTriangle size={20} className="text-red-600" />
+                ) : (
+                  <Settings size={20} className="text-indigo-600" />
+                )}
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
             >
-              <h3 className="text-md sm:text-lg md:text-xl font-semibold text-violet-800">
-                Change {activeDialog === "username" ? "Username" : "Email"}
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs sm:text-md md:text-[15px] font-medium text-gray-700 mb-1">
-                    New {activeDialog === "username" ? "Username" : "Email"}
-                  </label>
-                  <input
-                    type={activeDialog === "email" ? "email" : "text"}
-                    name={activeDialog === "username" ? "newUsername" : "newEmail"}
-                    value={activeDialog === "username" ? formData.newUsername : formData.newEmail}
-                    onChange={handleInputChange}
-                    className="text-xs sm:text-md md:text-[15px] w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-md md:text-[15px] font-medium text-gray-700 mb-1">
-                    Current Password
-                  </label>
-                  <input
-                    type="password"
-                    name="currentPassword"
-                    value={formData.currentPassword}
-                    onChange={handleInputChange}
-                    className="text-xs sm:text-md md:text-[15px] w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  onClick={() => setActiveDialog(null)}
-                  className="px-4 py-2 text-xs sm:text-md md:text-[15px] text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="text-xs sm:text-md md:text-[15px] px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Save Changes
-                </button>
-              </div>
-            </form>
+              <X size={20} className="text-gray-500" />
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {children}
+            
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 text-sm sm:text-md py-3 px-4 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                onClick={onSubmit}
+                className={`flex-1 py-3 px-4 text-sm sm:text-md text-white ${confirmColor} hover:opacity-90 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50`}
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                ) : (
+                  <>
+                    <CheckCircle2 size={18} />
+                    {confirmText}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const InputField = ({ label, type, name, value, onChange, required = true, placeholder }) => (
+    <div>
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+        required={required}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+
+  return (
+    <div className="relative min-h-full pt-20 sm:pt-8">
+      <div className="container mx-auto p-6 max-w-4xl">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl">
+              <Shield size={24} className="text-white" />
+            </div>
+            <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Account Settings
+            </h1>
+          </div>
+          <p className="text-sm sm:text-base text-gray-600">Manage your account preferences and security</p>
+        </div>
+
+        {/* Settings Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <SettingCard
+            icon={User}
+            title="Username"
+            value={username || "Not set"}
+            onAction={() => setActiveDialog("username")}
+            actionText="Change"
+          />
+          
+          <SettingCard
+            icon={Mail}
+            title="Email Address"
+            value={usermail || "Not set"}
+            onAction={() => setActiveDialog("email")}
+            actionText="Update"
+          />
+          
+          <SettingCard
+            icon={Lock}
+            title="Password"
+            value="••••••••••••"
+            onAction={sendPasswordReset}
+            actionText={loading ? "Sending..." : "Reset"}
+            actionColor="text-purple-600"
+          />
+          
+          <SettingCard
+            icon={Trash2}
+            title="Delete Account"
+            value="Permanently remove your account"
+            onAction={() => setActiveDialog("delete")}
+            actionText="Delete"
+            dangerous={true}
+          />
+        </div>
+
+        {/* Success/Error Messages */}
+        {success && (
+          <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3">
+            <CheckCircle2 size={20} className="text-emerald-600" />
+            <span className="text-emerald-800 font-medium">{success}</span>
           </div>
         )}
 
-        {/* Delete account dialog */}
-        {activeDialog === "delete" && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-            <form 
-              onSubmit={handleSubmit}
-              className="bg-white rounded-xl p-6 max-w-md w-full space-y-6"
-            >
-              <h3 className="text-md sm:text-lg md:text-xl font-semibold text-red-600">
-                Delete Account Permanently
-              </h3>
-              <div className="space-y-4">
-                <p className="text-xs sm:text-md md:text-[14px] leading-5 text-gray-600">
-                  This action cannot be undone. All your data will be permanently deleted.
-                </p>
-                <div>
-                  <label className="block text-xs sm:text-md md:text-[14px] font-medium text-gray-700 mb-1">
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    name="deletePassword"
-                    value={formData.deletePassword}
-                    onChange={handleInputChange}
-                    className="text-xs sm:text-md md:text-[15px] w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  onClick={() => setActiveDialog(null)}
-                  className="text-xs sm:text-md md:text-[15px] px-4 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="text-xs sm:text-md md:text-[15px] px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Delete Account
-                </button>
-              </div>
-            </form>
+        {error && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
+            <AlertTriangle size={20} className="text-red-600" />
+            <span className="text-red-800 font-medium">{error}</span>
           </div>
         )}
+
+        {/* Username Update Modal */}
+        <ActionModal
+          isOpen={activeDialog === "username"}
+          onClose={() => {
+            setActiveDialog(null);
+            setFormData({ ...formData, newUsername: "", currentPassword: "" });
+          }}
+          onSubmit={handleSubmit}
+          title="Update Username"
+          confirmText="Save Changes"
+          confirmColor="bg-indigo-600"
+        >
+          <InputField
+            label="New Username"
+            type="text"
+            name="newUsername"
+            value={formData.newUsername}
+            onChange={handleInputChange}
+            placeholder="Enter your new username"
+          />
+          <InputField
+            label="Current Password"
+            type="password"
+            name="currentPassword"
+            value={formData.currentPassword}
+            onChange={handleInputChange}
+            placeholder="Confirm with your current password"
+          />
+        </ActionModal>
+
+        {/* Email Update Modal */}
+        <ActionModal
+          isOpen={activeDialog === "email"}
+          onClose={() => {
+            setActiveDialog(null);
+            setFormData({ ...formData, newEmail: "", currentPassword: "" });
+          }}
+          onSubmit={handleSubmit}
+          title="Update Email Address"
+          confirmText="Update Email"
+          confirmColor="bg-indigo-600"
+        >
+          <InputField
+            label="New Email Address"
+            type="email"
+            name="newEmail"
+            value={formData.newEmail}
+            onChange={handleInputChange}
+            placeholder="Enter your new email address"
+          />
+          <InputField
+            label="Current Password"
+            type="password"
+            name="currentPassword"
+            value={formData.currentPassword}
+            onChange={handleInputChange}
+            placeholder="Confirm with your current password"
+          />
+        </ActionModal>
+
+        {/* Delete Account Modal */}
+        <ActionModal
+          isOpen={activeDialog === "delete"}
+          onClose={() => {
+            setActiveDialog(null);
+            setFormData({ ...formData, deletePassword: "" });
+          }}
+          onSubmit={handleSubmit}
+          title="Delete Account"
+          confirmText="Delete Forever"
+          confirmColor="bg-red-600"
+          dangerous={true}
+        >
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+            <div className="flex items-center gap-3 mb-2">
+              <AlertTriangle size={20} className="text-red-600" />
+              <span className="font-semibold text-red-800">Warning</span>
+            </div>
+            <p className="text-red-700 text-sm leading-relaxed">
+              This action cannot be undone. All your data, including boards, projects, and account information will be permanently deleted.
+            </p>
+          </div>
+          <InputField
+            label="Confirm with Password"
+            type="password"
+            name="deletePassword"
+            value={formData.deletePassword}
+            onChange={handleInputChange}
+            placeholder="Enter your password to confirm deletion"
+          />
+        </ActionModal>
       </div>
     </div>
   );
